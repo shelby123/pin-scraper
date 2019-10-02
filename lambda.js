@@ -41,6 +41,7 @@ async function getUrls() {
 }
 
 async function gatherData() {
+    console.log("About to gather Data");
     let data = [];
     try {
         let urls = await getUrls();
