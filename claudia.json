@@ -1,0 +1,7 @@
+{
+  "lambda": {
+    "role": "pin-scraper-executor",
+    "name": "pin-scraper",
+    "region": "us-east-2"
+  }
+}
