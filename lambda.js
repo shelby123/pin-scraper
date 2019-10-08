@@ -40,6 +40,11 @@ async function getUrls() {
     return urls;
 }
 
+function reflect(promise){
+    return promise.then(function(v){ return {v:v, status: "fulfilled" }},
+                        function(e){ return {e:e, status: "rejected" }});
+}
+
 async function gatherData() {
     console.log("About to gather Data");
     let data = [];
@@ -67,8 +72,14 @@ async function gatherData() {
             }
         })
         const pinResults = [];
-        await Promise.all(pinPromises)
-            .then(result => pinResults.push(result));
+        await Promise.all(pinPromises.map(reflect))
+            .then(result => {
+                const successfulResults = results.filter(x => x.status === 'fulfilled');
+                const failedResults = results.filter(x => x.status !== 'fulfilled');
+                console.log("URLs processed: " + successfulResults.length);
+                console.log("URLs FAILED to process: " + failedResults.length);
+                pinResults.push(successfulResults)
+            });
         return pinResults;
     } catch(e) {
         console.log(e);
