@@ -45,11 +45,14 @@ function reflect(promise){
                         function(e){ return {e:e, status: "rejected" }});
 }
 
+
 async function gatherData() {
     console.log("About to gather Data");
     let data = [];
     try {
         let urls = await getUrls();
+        console.log("Lamdba.gatherData: Urls from the DB: ");
+        console.log(urls);
         const kickstarterUrls = urls.filter(item => item.pinType === 0).map(item => item.url);
         const shopifyUrls = urls.filter(item => item.pinType === 1).map(item => item.url);
         const etsyUrls = urls.filter(item => item.pinType === 3).map(item => item.url);
@@ -60,22 +63,27 @@ async function gatherData() {
                     etsy_data.generateEtsyData(etsyUrls),
                 ]);
         let pinData = pinDataSegments[0].concat(pinDataSegments[1]).concat(pinDataSegments[2]);
-        console.log("GatherData.pinData : " + pinData);
+        console.log("Lambda.GatherData: pinData : " + pinData);
         const pinPromises = [];
         pinData.forEach(pin => {
             try {
-                console.log("calling to post data " + pin + " " + pin.url);
-                const pinPromise = postData(DB_URL_POST_PIN_DATA, pin);
-                pinPromises.push(pinPromise);
+                if (pin !== undefined) {
+                    console.log("Lambda.GatherData: calling to post data " + pin + " " + pin.url);
+                    const pinPromise = postData(DB_URL_POST_PIN_DATA, pin);
+                    pinPromises.push(pinPromise);
+                } else {
+                    console.log("Lambda.GatherData: skipping undefined pin");
+                }
+               
             } catch (error) {
                 console.error(error);
             }
         })
         const pinResults = [];
         await Promise.all(pinPromises.map(reflect))
-            .then(result => {
-                const successfulResults = results.filter(x => x.status === 'fulfilled');
-                const failedResults = results.filter(x => x.status !== 'fulfilled');
+            .then(results => {
+                const successfulResults = results.filter(x => x !== undefined && x.status === 'fulfilled');
+                const failedResults = results.filter(x => x === undefined || x.status !== 'fulfilled');
                 console.log("URLs processed: " + successfulResults.length);
                 console.log("URLs FAILED to process: " + failedResults.length);
                 pinResults.push(successfulResults)
@@ -85,11 +93,12 @@ async function gatherData() {
         console.log(e);
     }
 }
-// async function temp() {
-// let results = await gatherData();
-// console.log("Final results " + results);
-// }
-// temp();
+async function temp() {
+let results = await gatherData();
+console.log("Final results ");
+console.log(results.map(res=> res.v));
+}
+temp();
 exports.handler = async function (event, context) {
     let results = await gatherData();
     context.succeed(results);
