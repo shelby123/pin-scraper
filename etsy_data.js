@@ -114,6 +114,9 @@ async function generateEtsyData(urls) {
             let etsyPromise = constructEtsyPin(listingId).then(data => {
                 etsyData.push(data);
                 console.log("Data pushed from listing " + listingId + ":\n" + data);
+            },
+            err => {
+                console.error("Etsy_data.generateEtsyData: " + "unable to generate data for etsy url-" + url);
             });
             promises.push(etsyPromise);
         }
