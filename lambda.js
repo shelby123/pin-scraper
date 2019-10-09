@@ -100,6 +100,8 @@ console.log(results.map(res=> res.v));
 }
 temp();
 exports.handler = async function (event, context) {
+    console.log("Handler: event is ");
+    console.log(event);
     let results = await gatherData();
     context.succeed(results);
 };
