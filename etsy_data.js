@@ -101,15 +101,19 @@ async function constructEtsyPin(listingId) {
     } else {
         throw new Error("Error in constructing Etsy Pin Data");
     }
-
 }
 
 async function generateEtsyData(urls) {
     let promises = [];
     let etsyData = [];
-    urls.forEach(url => {
+    let callNum = 0;
+    let interval = setInterval( () => {
+        let url = urls[callNum];
+        callNum++;
+        if (callNum >= urls.length) {
+            clearInterval(interval);
+        }
         let listingId = getListingIdFromUrl(url);
-        console.log("Listing ID from URL : " + listingId);
         if (listingId !== undefined) {
             let etsyPromise = constructEtsyPin(listingId).then(data => {
                 etsyData.push(data);
@@ -120,13 +124,11 @@ async function generateEtsyData(urls) {
             });
             promises.push(etsyPromise);
         }
-    })
+    }, 1000);
     let results = await Promise.all(promises);
     return etsyData;
 
 }
-
-let url = ["https://www.etsy.com/listing/720817894/preorder-greek-gods-cute-eeveelutions?ref=cart"];
 function getListingIdFromUrl(url) {
     let listingRegex = /listing\/(\d+)\//
     let matches = url.match(listingRegex);
