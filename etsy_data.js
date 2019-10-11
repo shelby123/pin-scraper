@@ -129,6 +129,8 @@ async function generateEtsyData(urls) {
     return etsyData;
 
 }
+
+
 function getListingIdFromUrl(url) {
     let listingRegex = /listing\/(\d+)\//
     let matches = url.match(listingRegex);

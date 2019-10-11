@@ -93,12 +93,12 @@ async function gatherData() {
         console.log(e);
     }
 }
-async function temp() {
-let results = await gatherData();
-console.log("Final results ");
-console.log(results.map(res=> res.v));
-}
-temp();
+// async function temp() {
+// let results = await gatherData();
+// console.log("Final results ");
+// console.log(results.map(res=> res.v));
+// }
+// temp();
 exports.handler = async function (event, context) {
     console.log("Handler: event is ");
     console.log(event);
