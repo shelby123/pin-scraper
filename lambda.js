@@ -9,9 +9,16 @@ const fetch = require('node-fetch');
 const DB_URL = process.env.DB_URL_ENV;
 const DB_URL_POST_PIN_DATA = process.env.DB_URL_POST_PIN_DATA_ENV;
 
-async function postData(url = '', data = {}) {
+function handleErrors(response) {
+    if (!response.ok) {
+        throw Error(response.statusText);
+    }
+    return response;
+}
+
+async function postData(url = '', pin) {
     // Default options are marked with *
-    const response = fetch(url, {
+    const response = await fetch(url, {
         method: 'POST', // *GET, POST, PUT, DELETE, etc.
         mode: 'no-cors', // no-cors, *cors, same-origin
         cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
@@ -20,9 +27,23 @@ async function postData(url = '', data = {}) {
         },
         redirect: 'follow', // manual, *follow, error
         referrer: 'no-referrer', // no-referrer, *client
-        body: JSON.stringify(data) // body data type must match "Content-Type" header
-    }).then(res => res.json());
-    return await response; // parses JSON response into native JavaScript objects
+        body: JSON.stringify(pin) // body data type must match "Content-Type" header
+    }).then(response => {
+        let result = { success: response.ok, statusText: response.statusText }
+        return result;
+    })
+        .catch(error => {
+            console.log("Lambda.postData: Error sending data " + data)
+            console.log(error)
+            return { success: false, statusText: error };
+        })
+    return response; // parses JSON response into native JavaScript objects
+}
+
+async function saveData(item) {
+    let savedStatus = await postData(DB_URL_POST_PIN_DATA, item.data);
+    item.savedStatus = savedStatus
+    return item;
 }
 
 async function getUrls() {
@@ -40,28 +61,90 @@ async function getUrls() {
     return urls;
 }
 
-function reflect(promise){
-    return promise.then(function(v){ return {v:v, status: "fulfilled" }},
-                        function(e){ return {e:e, status: "rejected" }});
+function reflect(promise) {
+    return promise.then(function (v) { return { v: v, status: "fulfilled" } },
+        function (e) { return { e: e, status: "rejected" } });
 }
 
+
+async function processOneUrl(item) {
+    const METHOD_TAG = 'Lamdba.processOneUrl';
+    console.log(METHOD_TAG + " url to process : " + item.url);
+    let result = {};
+    if (item.url !== undefined && item.pinType !== undefined) {
+        if (item.pinType == 0) {
+            return kickstarter_data.generateKickstarterData(item.url);
+        } else if (item.pinType == 1) {
+            return shopify_data.generateShopifyData(item.url);
+        } else if (item.pinType == 3) {
+            return etsy_data.generateEtsyData(item.url);
+        } else {
+            result.success = false;
+            result.error = "unable to generate data for pin of type " + item.pinType;
+            result.url = item.url;
+        }
+    } else {
+        result.success = false;
+        result.error = "item does not have url or pin type";
+        result.url = item.url;
+    }
+    return result
+}
+
+async function gatherDataFromUrls(urls) {
+    let promises = [];
+    urls.forEach(url => {
+        promises.push(processOneUrl(url));
+    })
+    try {
+        let results = await Promise.all(promises);
+        let successful = results.filter(item => item.success);
+        let failed = results.filter(item => !item.success);
+        let savePromises = [];
+        successful.forEach(item => {
+            console.log(item.data)
+            let savePromise = saveData(item);
+            savePromises.push(savePromise);
+        })
+        let successfulSaveData = await Promise.all(savePromises);
+        let toReturn = failed.concat(successfulSaveData);
+        return toReturn;
+    } catch (error) {
+        console.log("error " + error)
+        return "there was an error processing the data" + error;
+    }
+}
+
+
+async function temp() {
+    let urls = [
+        {pinType: 0, url: 'https://www.kickstarter.com/projects/355276126/animal-pals-enamel-pin-collection'},
+        {pinType: 1, url: 'https://birduyen.com/products/leafeon-pin'},
+        {pinType: 3, url: 'https://www.etsy.com/listing/729860078/preorder-galar-pony-cute-pastel-unicorn?ref=user_profile&bes=1'},
+    ]
+    // let urls = await getUrls();
+    let results = await gatherDataFromUrls(urls);
+    console.log(results);
+
+}
+temp();
 
 async function gatherData() {
     console.log("About to gather Data");
     let data = [];
     try {
         let urls = await getUrls();
-        console.log("Lamdba.gatherData: Urls from the DB: ");
+        console.log("Lamdba.gatherData: " + urls.length + " Urls gathered from the DB: ");
         console.log(urls);
         const kickstarterUrls = urls.filter(item => item.pinType === 0).map(item => item.url);
         const shopifyUrls = urls.filter(item => item.pinType === 1).map(item => item.url);
         const etsyUrls = urls.filter(item => item.pinType === 3).map(item => item.url);
         // console.log("GatherData.Urls : " + urls);
         let pinDataSegments = await Promise.all([
-                    kickstarter_data.generateKickstarterData(kickstarterUrls),
-                    shopify_data.generateShopifyData(shopifyUrls),
-                    etsy_data.generateEtsyData(etsyUrls),
-                ]);
+            // kickstarter_data.generateKickstarterData(kickstarterUrls),
+            // shopify_data.generateShopifyData(shopifyUrls),
+            etsy_data.generateEtsyData(etsyUrls),
+        ]);
         let pinData = pinDataSegments[0].concat(pinDataSegments[1]).concat(pinDataSegments[2]);
         console.log("Lambda.GatherData: pinData : " + pinData);
         const pinPromises = [];
@@ -69,12 +152,12 @@ async function gatherData() {
             try {
                 if (pin !== undefined) {
                     console.log("Lambda.GatherData: calling to post data " + pin + " " + pin.url);
-                    const pinPromise = postData(DB_URL_POST_PIN_DATA, pin);
-                    pinPromises.push(pinPromise);
+                    // const pinPromise = postData(DB_URL_POST_PIN_DATA, pin);
+                    // pinPromises.push(pinPromise);
                 } else {
                     console.log("Lambda.GatherData: skipping undefined pin");
                 }
-               
+
             } catch (error) {
                 console.error(error);
             }
@@ -89,7 +172,7 @@ async function gatherData() {
                 pinResults.push(successfulResults)
             });
         return pinResults;
-    } catch(e) {
+    } catch (e) {
         console.log(e);
     }
 }

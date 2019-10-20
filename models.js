@@ -7,7 +7,14 @@ class ItemOption {
         this.quantity = quantity;
     }
 }
- 
+
+class EtsyInactivePins {
+    constructor(postingUrl, state) {
+        this.url = postingUrl;
+        this.state = state;
+    }
+}
+
 class EtsyPins {
     constructor(name, imageUrl, postingUrl, artistName, originalCurrency) {
         this.name = name;
@@ -72,5 +79,6 @@ module.exports = {
     KickStarterPins: KickStarterPins,
     ShopifyPins: ShopifyPins,
     EtsyPins: EtsyPins,
+    EtsyInactivePins: EtsyInactivePins,
 
 }
