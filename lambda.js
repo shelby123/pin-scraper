@@ -116,66 +116,65 @@ async function gatherDataFromUrls(urls) {
 }
 
 
-async function temp() {
-    let urls = [
-        {pinType: 0, url: 'https://www.kickstarter.com/projects/355276126/animal-pals-enamel-pin-collection'},
-        {pinType: 1, url: 'https://birduyen.com/products/leafeon-pin'},
-        {pinType: 3, url: 'https://www.etsy.com/listing/729860078/preorder-galar-pony-cute-pastel-unicorn?ref=user_profile&bes=1'},
-    ]
-    // let urls = await getUrls();
+async function gatherData() {
+    // let urls = [
+    //     {pinType: 0, url: 'https://www.kickstarter.com/projects/355276126/animal-pals-enamel-pin-collection'},
+    //     {pinType: 1, url: 'https://birduyen.com/products/leafeon-pin'},
+    //     {pinType: 3, url: 'https://www.etsy.com/listing/729860078/preorder-galar-pony-cute-pastel-unicorn?ref=user_profile&bes=1'},
+    // ]
+    let urls = await getUrls();
     let results = await gatherDataFromUrls(urls);
     console.log(results);
-
+    return results;
 }
-temp();
 
-async function gatherData() {
-    console.log("About to gather Data");
-    let data = [];
-    try {
-        let urls = await getUrls();
-        console.log("Lamdba.gatherData: " + urls.length + " Urls gathered from the DB: ");
-        console.log(urls);
-        const kickstarterUrls = urls.filter(item => item.pinType === 0).map(item => item.url);
-        const shopifyUrls = urls.filter(item => item.pinType === 1).map(item => item.url);
-        const etsyUrls = urls.filter(item => item.pinType === 3).map(item => item.url);
-        // console.log("GatherData.Urls : " + urls);
-        let pinDataSegments = await Promise.all([
-            // kickstarter_data.generateKickstarterData(kickstarterUrls),
-            // shopify_data.generateShopifyData(shopifyUrls),
-            etsy_data.generateEtsyData(etsyUrls),
-        ]);
-        let pinData = pinDataSegments[0].concat(pinDataSegments[1]).concat(pinDataSegments[2]);
-        console.log("Lambda.GatherData: pinData : " + pinData);
-        const pinPromises = [];
-        pinData.forEach(pin => {
-            try {
-                if (pin !== undefined) {
-                    console.log("Lambda.GatherData: calling to post data " + pin + " " + pin.url);
-                    // const pinPromise = postData(DB_URL_POST_PIN_DATA, pin);
-                    // pinPromises.push(pinPromise);
-                } else {
-                    console.log("Lambda.GatherData: skipping undefined pin");
-                }
+// async function gatherData() {
+//     console.log("About to gather Data");
+//     let data = [];
+//     try {
+//         let urls = await getUrls();
+//         console.log("Lamdba.gatherData: " + urls.length + " Urls gathered from the DB: ");
+//         console.log(urls);
+//         const kickstarterUrls = urls.filter(item => item.pinType === 0).map(item => item.url);
+//         const shopifyUrls = urls.filter(item => item.pinType === 1).map(item => item.url);
+//         const etsyUrls = urls.filter(item => item.pinType === 3).map(item => item.url);
+//         // console.log("GatherData.Urls : " + urls);
+//         let pinDataSegments = await Promise.all([
+//             // kickstarter_data.generateKickstarterData(kickstarterUrls),
+//             // shopify_data.generateShopifyData(shopifyUrls),
+//             etsy_data.generateEtsyData(etsyUrls),
+//         ]);
+//         let pinData = pinDataSegments[0].concat(pinDataSegments[1]).concat(pinDataSegments[2]);
+//         console.log("Lambda.GatherData: pinData : " + pinData);
+//         const pinPromises = [];
+//         pinData.forEach(pin => {
+//             try {
+//                 if (pin !== undefined) {
+//                     console.log("Lambda.GatherData: calling to post data " + pin + " " + pin.url);
+//                     // const pinPromise = postData(DB_URL_POST_PIN_DATA, pin);
+//                     // pinPromises.push(pinPromise);
+//                 } else {
+//                     console.log("Lambda.GatherData: skipping undefined pin");
+//                 }
 
-            } catch (error) {
-                console.error(error);
-            }
-        })
-        const pinResults = [];
-        await Promise.all(pinPromises.map(reflect))
-            .then(results => {
-                const successfulResults = results.filter(x => x !== undefined && x.status === 'fulfilled');
-                const failedResults = results.filter(x => x === undefined || x.status !== 'fulfilled');
-                console.log("URLs processed: " + successfulResults.length);
-                console.log("URLs FAILED to process: " + failedResults.length);
-                pinResults.push(successfulResults)
-            });
-        return pinResults;
-    } catch (e) {
-        console.log(e);
-    }
-}
+//             } catch (error) {
+//                 console.error(error);
+//             }
+//         })
+//         const pinResults = [];
+//         await Promise.all(pinPromises.map(reflect))
+//             .then(results => {
+//                 const successfulResults = results.filter(x => x !== undefined && x.status === 'fulfilled');
+//                 const failedResults = results.filter(x => x === undefined || x.status !== 'fulfilled');
+//                 console.log("URLs processed: " + successfulResults.length);
+//                 console.log("URLs FAILED to process: " + failedResults.length);
+//                 pinResults.push(successfulResults)
+//             });
+//         return pinResults;
+//     } catch (e) {
+//         console.log(e);
+//     }
+// }
 // async function temp() {
 // let results = await gatherData();
 // console.log("Final results ");
